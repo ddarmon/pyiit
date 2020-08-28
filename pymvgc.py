@@ -253,3 +253,30 @@ def tsdata_to_granger(x, y, p):
 		F[i] = numpy.log(numpy.linalg.det(SigmaSUB)) - numpy.log(numpy.linalg.det(Sigma_hat[numpy.ix_(submodel_inds, submodel_inds)]))
 
 	return F, A_hat, Sigma_hat
+
+def tsdata_to_A_and_Sigma(x, p):
+	K = x.shape[0]
+
+	T = x.shape[1]
+
+	future = numpy.zeros((T - p, K))
+	past = numpy.zeros((T - p, K*p))
+
+	for k in range(K):
+		X = sidpy.embed_ts(x[k, :], p)
+
+		future[:, k] = X[:, -1]
+
+		past[:, k*p:(k+1)*p] = X[:, :-1][:, ::-1]
+
+	# This assumes time series have been **centered** to have mean 0!
+	reg = LinearRegression(fit_intercept = False).fit(past, future)
+
+	future_lm = reg.predict(past)
+
+	resids = future - future_lm
+
+	A_hat = reg.coef_.reshape((K, K, p))
+	Sigma_hat = numpy.cov(resids.T, bias = True)
+
+	return A_hat, Sigma_hat
