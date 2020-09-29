@@ -111,6 +111,33 @@ def integrated_synergy(A, Sigma, partition, nlag = 2):
 
 	return psi
 
+def maximize_integrated_synergy(A, Sigma, verbose = True):
+	K = A.shape[0]
+
+	partitions = bipart(K)
+
+	### Optimal partition by iteration over all partitions:
+
+	psi_by_partition = numpy.zeros(len(partitions))
+
+	for partition_ind in range(len(partitions)):
+		partition = [partitions[partition_ind]['0'], partitions[partition_ind]['1']]
+
+		psi = integrated_synergy(A, Sigma, partition = partition)
+
+		psi_by_partition[partition_ind] = psi
+
+	best_partition = numpy.argmin(psi_by_partition)
+
+	psi_opt = psi_by_partition[best_partition]
+
+	if verbose:
+		print("The optimal partition is: ", partitions[best_partition])
+		print("The IIT is: ", psi_opt)
+
+	return psi_opt, best_partition, psi_by_partition, partitions
+
+
 def part(agents, items):
 	# From
 	# 	https://stackoverflow.com/questions/42290859/generate-all-equal-sized-partitions-of-a-set

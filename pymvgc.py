@@ -297,7 +297,7 @@ def tsdata_to_A_and_Sigma(x, p):
 
 	return A_hat, Sigma_hat
 
-def datamatrix_to_A_and_Sigma(X, p):
+def datamatrix_to_A_and_Sigma(X):
 	# X ~  K x (T - p) x (p + 1)
 	
 	K = X.shape[0]
