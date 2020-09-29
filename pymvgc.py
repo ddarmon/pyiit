@@ -35,7 +35,8 @@ def var_to_autocov(A, Sigma, nlag = None):
 	if nlag is None:
 		nlag = int(acminlags)
 	else:
-		nlag = numpy.min([int(acminlags), nlag])
+		# nlag = numpy.min([int(acminlags), nlag]) # From original mvgc code
+		pass
 
 	TOP = numpy.column_stack((Sigma, numpy.zeros((K, pK1))))
 	BOTTOM = numpy.column_stack((numpy.zeros((pK1, K)), numpy.zeros((pK1, pK1))))
