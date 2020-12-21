@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 
 import scipy.linalg
 
-import ipdb
-
 import sidpy
 
 from sklearn.linear_model import LinearRegression

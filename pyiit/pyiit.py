@@ -3,8 +3,6 @@ import numpy
 
 from itertools import combinations
 
-import ipdb
-
 def integrated_synergy(A, Sigma, partition, nlag = 2):
 	K = A.shape[0]
 
