@@ -50,7 +50,7 @@ def integrated_synergy(A, Sigma, partition, nlag = 2):
 
 	# Note: Computing inv(SigX1)*CovX1X0 by solving
 	# 
-	# 	SigX0*A = CovX10
+	# 	SigX0*A = CovX1X0
 
 	SigX0gX1 = SigX0 - CovX0X1 @ numpy.linalg.solve(SigX0, CovX0X1.T)
 
