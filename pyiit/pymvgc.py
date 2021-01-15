@@ -8,9 +8,7 @@ import sidpy
 
 from sklearn.linear_model import LinearRegression
 
-plt.ion()
-
-def var_to_autocov(A, Sigma, nlag = None):
+def var_to_autocov(A, Sigma, nlag=None, return_big_gamma=False):
 	p = A.shape[2]
 	K = A.shape[0]
 
@@ -51,7 +49,10 @@ def var_to_autocov(A, Sigma, nlag = None):
 		for j in range(p):
 			Gammas[:, :, i] += numpy.matmul(A[:, :, j], Gammas[:, :, i-1-j])
 
-	return Gammas
+	if return_big_gamma:
+		return Gammas, Gamma0
+	else:
+		return Gammas
 
 def autocov_to_var(GammasSUB):
 	q = GammasSUB.shape[2]-1 # Not sure about this

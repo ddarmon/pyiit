@@ -3,7 +3,7 @@ import numpy
 
 from itertools import combinations
 
-def integrated_synergy(A, Sigma, partition, nlag = 2):
+def integrated_synergy(A, Sigma, partition, p=1):
 	K = A.shape[0]
 
 	all_nodes = list(range(K))
@@ -14,27 +14,21 @@ def integrated_synergy(A, Sigma, partition, nlag = 2):
 	#
 	#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-	Gam = pymvgc.var_to_autocov(A, Sigma, nlag = nlag)
+	Gam, Gamma0 = pymvgc.var_to_autocov(A, Sigma, nlag=p+1, return_big_gamma=True)
 
-	# Fairly certain this is correct:
+	# NOTE: Gamma0 is equivalent to Var(X_{(t-1):(t-p)})
 
 	# Var(X_{t})
 
 	SigX0  = Gam[:, :, 0]
 
-	# Cov(X_{t}, X_{t - 1})
+	# Cov(X_{t}, X_{(t - 1):(t-p)})
 
-	CovX0X1 = Gam[:, :, 1]
+	CovX0X1 = Gam[:, :, 1:]
 
-	# Fairly certain this is incorrect:
+	# Reshape to be K x K*p, rather than K x K x p
 
-	# # Var(X_{t})
-
-	# SigX0  = Gam[:, :, 0].T
-
-	# # Cov(X_{t}, X_{t - 1})
-
-	# CovX0X1 = Gam[:, :, 1].T
+	CovX0X1 = CovX0X1.reshape(K, K*p, order = 'F')
 
 	#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	#
@@ -42,17 +36,15 @@ def integrated_synergy(A, Sigma, partition, nlag = 2):
 	#
 	#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-	# I[X_{t-1}; X_t] = 0.5 log |SigX0|/|SigX0gX1|
+	# I[X_{t-1}; X_t] = 0.5 log |SigX0|/|SigX0gX1, return_big_Gamma=True|
 
 	# SigX0gX1 = SigX0 - CovX0X1*inv(SigX1)*CovX1X0
-	# 
-	# where SigX1 = SigX0 by wide-sense stationarity.
 
 	# Note: Computing inv(SigX1)*CovX1X0 by solving
 	# 
 	# 	SigX0*A = CovX1X0
 
-	SigX0gX1 = SigX0 - CovX0X1 @ numpy.linalg.solve(SigX0, CovX0X1.T)
+	SigX0gX1 = SigX0 - CovX0X1 @ numpy.linalg.solve(Gamma0, CovX0X1.T)
 
 	IX0X1 = 0.5*numpy.log(numpy.linalg.det(SigX0)/numpy.linalg.det(SigX0gX1))
 
@@ -64,7 +56,7 @@ def integrated_synergy(A, Sigma, partition, nlag = 2):
 
 	# I[M_{t-1}^{(r)}; X_{t}] = 0.5 log |SigX0|/|SigX0gM1|
 
-	# SigX0gM1 = SigX0 - CovX0M1*inv(SigM0)*CovM1X0
+	# SigX0gM1 = SigX0 - CovX0M1*inv(SigM1)*CovM1X0
 
 	# Compute mutual information I[M_{t-1}^{(r)}; X_{t}] for
 	# each r.
@@ -74,34 +66,34 @@ def integrated_synergy(A, Sigma, partition, nlag = 2):
 	for partition_ind in range(len(partition)):
 		partition_nodes = partition[partition_ind]
 
-		block_inds = numpy.ix_(partition_nodes, partition_nodes)
+		# Extract the appropriate rows and columns from
+		# Gamma0 to pull out Var(M^{(k)}_{(t-p)x(t-1)}).
 
-		SigM0 = SigX0[block_inds]
+		# Ex. When p = 3, K = 6, and partition_nodes = [0, 1, 2]
+		# should use rows and columns:
+		# 
+		# 0, 1, 2 | 3, 4, 5 | 6, 7, 8
 
-		# What I had originally:
+		subset_inds = []
 
-		block_inds = numpy.ix_(all_nodes, partition_nodes)
+		for node in partition_nodes:
+			subset_inds += [p*node + i for i in range(p)]
 
-		# Cov(X_{t}, M^{(k)}_{t-1})
+		block_inds = numpy.ix_(subset_inds, subset_inds)
+
+		SigM1 = Gamma0[block_inds]
+
+		block_inds = numpy.ix_(all_nodes, subset_inds)
+
+		# Cov(X_{t}, M^{(k)}_{(t-p)x(t-1)})
 
 		CovX0M1 = CovX0X1[block_inds]
 
-		# A possible alternative, that I currently (080720)
-		# think is wrong:
-
-		# block_inds = numpy.ix_(partition_nodes, all_nodes)
-		# CovX0M1 = CovX0X1[block_inds].T
-
-		# block_inds = numpy.ix_(all_nodes, partition_nodes)
-		# C2 = CovX0X1[block_inds]
-
 		# SigX0gM1 = SigX0 - CovX0M1*inv(SigM1)*CovM1X0
-		# 
-		# where SigM1 = SigM0 by wide-sense stationarity.
 
-		SigX0gM1 = SigX0 - CovX0M1 @ numpy.linalg.solve(SigM0, CovX0M1.T)
+		SigX0gM1 = SigX0 - CovX0M1 @ numpy.linalg.solve(SigM1, CovX0M1.T)
 
-		IX0M1 = 0.5*numpy.log(numpy.linalg.det(SigX0)/numpy.linalg.det(SigX0gM1))
+		IX0M1 = 0.5*(numpy.log(numpy.linalg.det(SigX0)) - numpy.log(numpy.linalg.det(SigX0gM1)))
 
 		Is[partition_ind] = IX0M1
 
@@ -109,7 +101,7 @@ def integrated_synergy(A, Sigma, partition, nlag = 2):
 
 	return psi
 
-def maximize_integrated_synergy(A, Sigma, verbose = True):
+def maximize_integrated_synergy(A, Sigma, p=1, verbose=True):
 	K = A.shape[0]
 
 	partitions = bipart(K)
@@ -121,7 +113,7 @@ def maximize_integrated_synergy(A, Sigma, verbose = True):
 	for partition_ind in range(len(partitions)):
 		partition = [partitions[partition_ind]['0'], partitions[partition_ind]['1']]
 
-		psi = integrated_synergy(A, Sigma, partition = partition)
+		psi = integrated_synergy(A, Sigma, partition=partition, p=1)
 
 		psi_by_partition[partition_ind] = psi
 
