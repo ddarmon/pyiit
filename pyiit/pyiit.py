@@ -4,6 +4,51 @@ import numpy
 from itertools import combinations
 
 def integrated_synergy(A, Sigma, partition, p=1):
+	"""
+	Compute the integrated synergy under the
+	assumption that the underlying process is a Gaussian 
+	VAR(p) process with model matrix A (K x K x p) and
+	noise variance-covariance matrix Sigma (K x K).
+
+	integrated_synergy() uses the full model matrix 
+	A to compute the needed variance matrices, but
+	only computes the integrated synergy using the 
+	number of lagged time points given by p.
+
+	Parameters
+	----------
+	A : numpy.array
+			The K x K x p model matrix for the Var(p)
+			process.
+	Sigma : numpy.array
+			The K x K noise variance-covariance matrix.
+	partition : dict
+			The desired partition of the system.
+	p : int
+			The number of lagged time points used to
+			compute the integrated synergy.
+
+	Returns
+	-------
+	psi : float
+			The integrated synergy of the given
+			partition of the VAR(p) model.
+
+	Notes
+	-----
+	See 
+
+	Pedro Mediano, Anil K. Seth, and Adam B. Barrett. "Measuring integrated information: Comparison of candidate measures in theory and simulation." Entropy 21.1 (2019): 17.
+
+	for more details on computed integrated synergy.
+
+	Examples
+	--------
+	>>> import module_name
+	>>> # Demonstrate code here.
+
+	"""
+
 	K = A.shape[0]
 
 	all_nodes = list(range(K))
@@ -101,7 +146,63 @@ def integrated_synergy(A, Sigma, partition, p=1):
 
 	return psi
 
-def maximize_integrated_synergy(A, Sigma, p=1, verbose=True):
+def minimize_integrated_synergy(A, Sigma, p=1, verbose=True):
+	"""
+	Minimize the integrated synergy across all-possible 
+	bi-partitions of the system under the assumption
+	that the underlying process is a Gaussian 
+	VAR(p) process with model matrix A (K x K x p) and
+	noise variance-covariance matrix Sigma (K x K).
+
+	minimize_integrated_synergy() uses the full model matrix 
+	A to compute the needed variance matrices, but
+	only computes the integrated synergy using the 
+	number of lagged time points given by p.
+
+	Parameters
+	----------
+	A : numpy.array
+			The K x K x p model matrix for the Var(p)
+			process.
+	Sigma : numpy.array
+			The K x K noise variance-covariance matrix.
+	p : int
+			The number of lagged time points used to
+			compute the integrated synergy.
+	verbose : bool
+			Whether (default) or not to print the optimal
+			partition and its integrated synergy.
+
+	Returns
+	-------
+	psi_opt : float
+			The minimal integrated synergy across all
+			of the bipartitions.
+	best_partition : float
+			The (possibly non-unique) bipartition giving
+			the minimal integrated synergy.
+	psi_by_partition : numpy.array
+			The integrated synergies for each of the
+			bipartitions.
+	partitions : list
+			All possible bipartitions of the state
+			variables.
+
+	Notes
+	-----
+	See 
+
+	Pedro Mediano, Anil K. Seth, and Adam B. Barrett. "Measuring integrated information: Comparison of candidate measures in theory and simulation." Entropy 21.1 (2019): 17.
+
+	for more details on computed integrated synergy.
+
+	Examples
+	--------
+	>>> import module_name
+	>>> # Demonstrate code here.
+
+	"""
+
 	K = A.shape[0]
 
 	partitions = bipart(K)
@@ -129,8 +230,45 @@ def maximize_integrated_synergy(A, Sigma, p=1, verbose=True):
 
 
 def part(agents, items):
-	# From
-	# 	https://stackoverflow.com/questions/42290859/generate-all-equal-sized-partitions-of-a-set
+	"""
+	Compute all possible paritions of items into agents.
+
+	Note the partitions returned by part() include "duplicate"
+	partitions, for example:
+
+	{'1': [3, 4, 5], '0': [0, 1, 2]} and
+	{'1': [0, 1, 2], '0': [3, 4, 5]}
+
+	are both returned by part().
+
+	Parameters
+	----------
+	agents : list
+			The labels for the sets that make up the
+			partition, e.g. ['0', '1'] for a bipartition.
+	items : list
+			The items to be partitioned.
+
+	Returns
+	-------
+	result : list
+			A list of dictionaries, where each element of 
+			result contains the partition as a dictionary
+			where the keys are the elements of agents and
+			the values are the lists of the items in that
+			set in the partition.
+
+	Notes
+	-----
+	From
+		https://stackoverflow.com/questions/42290859/generate-all-equal-sized-partitions-of-a-set
+
+	Examples
+	--------
+	>>> import module_name
+	>>> # Demonstrate code here.
+
+	"""
 
 	if len(agents) == 1:
 		yield {agents[0]: items}
@@ -144,6 +282,37 @@ def part(agents, items):
 				yield result
 
 def bipart(K):
+	"""
+	Return all unique bipartitions of K elements, up to the labels
+	of the partitions.
+
+	NOTE: This code will only work with bipartitions of sets with
+	even cardinality.
+
+	Parameters
+	----------
+	K : int
+			The number of elements to partition via a bipartition.
+
+	Returns
+	-------
+	partitions : list
+			A list of dictionaries, where each element of 
+			result contains the partition as a dictionary
+			where the keys are the elements of agents and
+			the values are the lists of the items in that
+			set in the partition.
+
+	Notes
+	-----
+	Any notes go here.
+
+	Examples
+	--------
+	>>> import module_name
+	>>> # Demonstrate code here.
+
+	"""
 	if K % 2 != 0:
 		print("Error: This code has not been tested with uneven bipartitions.")
 
